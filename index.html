@@ -477,6 +477,13 @@ select.in{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   function digits(v){v=v.replace(/\D/g,'');if(v.length>9&&v.indexOf('998')===0)v=v.slice(3);return v.slice(0,9)}
   tel.addEventListener('input',function(){var v=digits(tel.value),o='';
     for(var i=0;i<v.length;i++){if(i===2||i===5||i===7)o+=' ';o+=v[i]}tel.value=o;});
+  // Reklama manbasi (UTM / Facebook) — arizaga qo'shib yuboriladi
+  var SRC=(function(){var K=['utm_source','utm_medium','utm_campaign','utm_content','utm_term'],o={},has=false,q;
+    try{q=new URLSearchParams(location.search)}catch(_){q=null}
+    if(q){K.forEach(function(k){var v=q.get(k);if(v){o[k]=v.slice(0,100);has=true}});if(q.get('fbclid')){o.fbclid='1';has=true}}
+    if(!has&&document.referrer){try{var rh=new URL(document.referrer).host;if(rh&&rh!==location.host){o.ref=rh;has=true}}catch(_){}}
+    try{if(has)sessionStorage.setItem('icz_src',JSON.stringify(o));else o=JSON.parse(sessionStorage.getItem('icz_src')||'{}')||{}}catch(_){}
+    return o}());
   var f=d.getElementById('lead'),btn=d.getElementById('sbtn'),msg=d.getElementById('msg');
   function setErr(id,box,t){d.getElementById('e-'+id).textContent=t;box.classList.toggle('bad',!!t);return !t}
   function check(){
@@ -491,7 +498,7 @@ select.in{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   f.addEventListener('submit',function(e){
     e.preventDefault();msg.className='msg';
     if(!check()){var b=f.querySelector('.bad');if(b){var t=/^(INPUT|TEXTAREA)$/.test(b.tagName)?b:b.querySelector('input');t&&t.focus()}return}
-    var data={first:f.first.value.trim(),last:f.last.value.trim(),phone:'+998'+digits(tel.value),service:svc.value,goal:f.goal.value.trim(),website:f.website.value,page:location.href};
+    var data={first:f.first.value.trim(),last:f.last.value.trim(),phone:'+998'+digits(tel.value),service:svc.value,goal:f.goal.value.trim(),website:f.website.value,page:location.href,src:SRC};
     btn.disabled=true;btn.classList.add('ld');btn.querySelector('.lbl').textContent='Yuborilmoqda…';
     var ctl=window.AbortController?new AbortController():null,tm=setTimeout(function(){ctl&&ctl.abort()},15000);
     fetch('/api/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data),signal:ctl&&ctl.signal})

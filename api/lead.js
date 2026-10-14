@@ -7,6 +7,25 @@ const esc = (s = "") =>
   String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 const clip = (s, n) => String(s || "").trim().slice(0, n);
 
+// Reklama manbasi: UTM teglar yoki Facebook/Instagram'dan kelganini aniqlaydi
+const SRC_NAMES = { fb: "Facebook", facebook: "Facebook", ig: "Instagram", instagram: "Instagram", msg: "Messenger", an: "Audience Network" };
+function sourceLines(src, esc) {
+  const s = src && typeof src === "object" ? src : {};
+  const g = (k) => String(s[k] || "").trim().slice(0, 100);
+  const source = g("utm_source"), medium = g("utm_medium"), campaign = g("utm_campaign"), content = g("utm_content"), ref = g("ref");
+  let where;
+  if (source) where = SRC_NAMES[source.toLowerCase()] || source;
+  else if (s.fbclid) where = "Facebook/Instagram";
+  else if (/(^|\.)(facebook|instagram)\.com$/i.test(ref)) where = /instagram/i.test(ref) ? "Instagram" : "Facebook";
+  else if (ref) where = ref;
+  else where = "To‘g‘ridan-to‘g‘ri (organik)";
+  if (medium && /^(paid|cpc|ads?|reklama)$/i.test(medium)) where += " — reklama";
+  const out = [`📣 <b>Manba:</b> ${esc(where)}`];
+  if (campaign) out.push(`🎯 <b>Kampaniya:</b> ${esc(campaign)}`);
+  if (content) out.push(`🖼 <b>Reklama:</b> ${esc(content)}`);
+  return out;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") {
@@ -42,6 +61,7 @@ export default async function handler(req, res) {
     `📞 <b>Telefon:</b> ${esc(phone)}\n` +
     `🧩 <b>Xizmat:</b> ${esc(service || "Tanlanmagan")}\n` +
     `🎯 <b>Maqsad:</b> ${esc(goal)}\n\n` +
+    sourceLines(b.src, esc).join("\n") + "\n" +
     `🕒 ${esc(time)}`;
 
   try {
